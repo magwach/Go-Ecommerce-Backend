@@ -12,7 +12,7 @@ func StartServer(cfg configs.AppConfig) {
 	port := cfg.ServerPort
 	app := fiber.New()
 
-	v1Routes := app.Group("/v1")
+	v1Routes := app.Group("/api/v1")
 
 	v1Routes.Get("/health", healthCheck)
 

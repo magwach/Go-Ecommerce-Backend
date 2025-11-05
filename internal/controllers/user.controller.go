@@ -2,14 +2,19 @@ package controllers
 
 import (
 	"go-ecommerce-app/internal/dormain"
+	"go-ecommerce-app/internal/dto"
+	"log"
 
 	"github.com/google/uuid"
 )
 
 type UserContoller struct{}
 
-func (s UserContoller) SignUp(input any) (string, error) {
-	return "", nil
+func (s UserContoller) SignUp(input dto.UserSignUp) (string, error) {
+
+	log.Println(input)
+
+	return "test-token", nil
 }
 
 func (s UserContoller) FindUserByEmail(email string) (*dormain.User, error) {
@@ -63,4 +68,3 @@ func (s UserContoller) GetOrders(u *dormain.User) (*dormain.Cart, error) {
 func (s UserContoller) GetOrderById(id, UserId uuid.UUID) (*dormain.Cart, error) {
 	return nil, nil
 }
-
