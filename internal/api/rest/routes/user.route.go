@@ -34,7 +34,7 @@ func UserRoutes(restHand *rest.RestHandler) {
 	publicRoutes.Post("/signup", handler.SignUp)
 	publicRoutes.Post("/login", handler.Login)
 
-	privateRoutes.Post("/verify", handler.Verify)
+	privateRoutes.Post("/verify", handler.VerifyCode)
 	privateRoutes.Get("/verify", handler.GetVerificationCode)
 	privateRoutes.Post("/profile", handler.CreateProfile)
 	privateRoutes.Get("/profile", handler.GetProfile)
@@ -102,15 +102,47 @@ func (h *userHandler) Login(ctx *fiber.Ctx) error {
 
 func (h *userHandler) GetVerificationCode(ctx *fiber.Ctx) error {
 
+	currentUser := h.Auth.GetCurrentUser(ctx)
+	token, err := h.Controllers.GetVerificationCode(&currentUser)
+	if err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Failed to send token",
+			"error":   err.Error(),
+		})
+	}
+
 	return ctx.Status(200).JSON(&fiber.Map{
-		"message": "User created successfully",
+		"message": "token sent successfully",
+		"token":   token,
 	})
 }
 
-func (h *userHandler) Verify(ctx *fiber.Ctx) error {
+func (h *userHandler) VerifyCode(ctx *fiber.Ctx) error {
+
+	currentUser := h.Auth.GetCurrentUser(ctx)
+
+	input := dto.UserVerifyCode{}
+
+	err := ctx.BodyParser(&input)
+
+	if err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Please provide valid inputs",
+			"error":   err.Error(),
+		})
+	}
+
+	err = h.Controllers.VerifyCode(currentUser.ID, input)
+
+	if err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Failed to verify code",
+			"error":   err.Error(),
+		})
+	}
 
 	return ctx.Status(200).JSON(&fiber.Map{
-		"message": "User created successfully",
+		"message": "User verified successfully",
 	})
 }
 
@@ -123,8 +155,11 @@ func (h *userHandler) CreateProfile(ctx *fiber.Ctx) error {
 
 func (h *userHandler) GetProfile(ctx *fiber.Ctx) error {
 
+	user := h.Auth.GetCurrentUser(ctx)
+
 	return ctx.Status(200).JSON(&fiber.Map{
-		"message": "User created successfully",
+		"message": "User Retrieved",
+		"user":    user,
 	})
 }
 

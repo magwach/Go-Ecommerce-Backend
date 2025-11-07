@@ -6,6 +6,7 @@ import (
 	"go-ecommerce-app/internal/dto"
 	"go-ecommerce-app/internal/helper"
 	"go-ecommerce-app/internal/schema"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -86,11 +87,66 @@ func (s UserContoller) Login(email, password string) (string, error) {
 	return token, nil
 }
 
-func (s UserContoller) GetVerificationCode(u *schema.User) (int, error) {
-	return 0, nil
+func (s UserContoller) GetVerificationCode(u *schema.User) (string, error) {
+
+	user, err := s.DB.FindUserById(u.ID)
+
+	if err != nil {
+		return "", errors.New("cannot find user")
+	}
+
+	if user.Verified {
+		return "", errors.New("user is already verified")
+	}
+
+	token, err := helper.SecureNumericCode(6)
+
+	if err != nil {
+		return "", errors.New("failed to generate token")
+	}
+
+	user.Code = token
+
+	user.Expiry = time.Now().Add(time.Minute * 10)
+
+	user, err = s.DB.UpdateUser(user.ID, user)
+
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
-func (s UserContoller) VerifyCode(u *schema.User) error {
+func (s UserContoller) VerifyCode(id uuid.UUID, input dto.UserVerifyCode) error {
+	user, err := s.DB.FindUserById(id)
+
+	if err != nil {
+		return errors.New("cannot find user")
+	}
+
+	if user.Verified {
+		return errors.New("user is already verified")
+	}
+
+	if time.Now().After(user.Expiry) {
+		return errors.New("expired token")
+	}
+
+	if input.Code != user.Code {
+		return errors.New("invalid token")
+	}
+
+	user.Code = ""
+	user.Expiry = time.Time{}
+	user.Verified = true
+
+	_, err = s.DB.UpdateUser(user.ID, user)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
