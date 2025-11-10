@@ -176,8 +176,51 @@ func (s UserContoller) UpdateProfile(id uuid.UUID, input any) error {
 	return nil
 }
 
-func (s UserContoller) BecomeSeller(id uuid.UUID, input any) (string, error) {
-	return "", nil
+func (s UserContoller) BecomeSeller(id uuid.UUID, input dto.BecomeASeller) (string, error) {
+
+	existingUser, err := s.DB.FindUserById(id)
+
+	if err != nil {
+		return "", errors.New("cannot find user")
+	}
+
+	if existingUser.UserType == schema.SELLER {
+		return "", errors.New("user is already seller")
+	}
+
+	existingUser.FirstName = input.FirstName
+	existingUser.LastName = input.LastName
+	existingUser.Phone = input.PhoneNumber
+	existingUser.UserType = schema.SELLER
+
+	seller, err := s.DB.UpdateUser(id, existingUser)
+
+	if err != nil {
+		return "", err
+	}
+
+	token, err := s.Auth.GenerateJWT(helper.JWTRequirements{
+		UserID: seller.ID,
+		Email:  seller.Email,
+		Role:   seller.UserType,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	err = s.DB.CreateBankAccount(schema.BankAccount{
+		UserID:      seller.ID,
+		BankAccount: input.BankAccountNumber,
+		SwiftCode:   input.SwiftCode,
+		PaymentType: input.PaymentType,
+	})
+
+	if err != nil {
+		return "", errors.New("failed to create the bank account")
+	}
+
+	return token, nil
 }
 
 func (s UserContoller) FindCart(id uuid.UUID) (*schema.Cart, error) {

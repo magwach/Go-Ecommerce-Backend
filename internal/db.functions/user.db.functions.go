@@ -15,6 +15,7 @@ type UserDBFunction interface {
 	FindUserByEmail(email string) (schema.User, error)
 	FindUserById(id uuid.UUID) (schema.User, error)
 	UpdateUser(id uuid.UUID, user schema.User) (schema.User, error)
+	CreateBankAccount(details schema.BankAccount) error
 }
 
 type userDBFunction struct {
@@ -85,6 +86,7 @@ func (r userDBFunction) UpdateUser(id uuid.UUID, updated schema.User) (schema.Us
 	user.Expiry = updated.Expiry
 	user.Verified = updated.Verified
 	user.UserType = updated.UserType
+	user.BankAccount = updated.BankAccount
 
 	if err := r.db.Model(&user).
 		Select("*").
@@ -95,4 +97,8 @@ func (r userDBFunction) UpdateUser(id uuid.UUID, updated schema.User) (schema.Us
 	}
 
 	return user, nil
+}
+
+func (r userDBFunction) CreateBankAccount(details schema.BankAccount) error {
+	return r.db.Create(&details).Error
 }

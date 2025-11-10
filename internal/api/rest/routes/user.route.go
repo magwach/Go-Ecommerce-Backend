@@ -17,10 +17,9 @@ type userHandler struct {
 func UserRoutes(restHand *rest.RestHandler) {
 	app := restHand.App
 
-
 	services := controllers.UserContoller{
-		DB:           functions.InitializeUserDBFunction(restHand.DB),
-		Auth:         restHand.Auth,
+		DB:     functions.InitializeUserDBFunction(restHand.DB),
+		Auth:   restHand.Auth,
 		Config: restHand.Configuration,
 	}
 	handler := userHandler{Controllers: services}
@@ -192,7 +191,29 @@ func (h *userHandler) GetOrders(ctx *fiber.Ctx) error {
 
 func (h *userHandler) BecomeSeller(ctx *fiber.Ctx) error {
 
-	return ctx.Status(200).JSON(&fiber.Map{
-		"message": "User created successfully",
+	user := h.Controllers.Auth.GetCurrentUser(ctx)
+
+	request := dto.BecomeASeller{}
+
+	err := ctx.BodyParser(&request)
+
+	if err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Please provide valid inputs",
+		})
+	}
+
+	token, err := h.Controllers.BecomeSeller(user.ID, request)
+
+	if err != nil {
+		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "Error trying to become seller",
+			"error":   err.Error(),
+		})
+	}
+
+	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
+		"message": "Sucessfully changed to seller",
+		"token":   token,
 	})
 }

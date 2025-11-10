@@ -28,17 +28,33 @@ func StartServer(cfg configs.AppConfig) {
 	log.Printf("Database Connected")
 
 	db.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
+	db.Exec(`
+			DO $$
+			BEGIN
+				IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_type') THEN
+					CREATE TYPE payment_type AS ENUM ('daily', 'weekly', 'monthly');
+				END IF;
+			END$$;
+			`)
 
-	db.AutoMigrate(&schema.User{})
+	err = db.AutoMigrate(&schema.User{})
+	if err != nil {
+		log.Fatalf("error running migrations: %v", err)
+	}
+
+	err = db.AutoMigrate(&schema.BankAccount{})
+	if err != nil {
+		log.Fatalf("error running migrations: %v", err)
+	}
 
 	v1Routes := app.Group("/api/v1")
 
 	v1Routes.Get("/health", healthCheck)
 
 	rh := &rest.RestHandler{
-		App:  v1Routes,
-		DB:   db,
-		Auth: auth,
+		App:           v1Routes,
+		DB:            db,
+		Auth:          auth,
 		Configuration: cfg,
 	}
 
