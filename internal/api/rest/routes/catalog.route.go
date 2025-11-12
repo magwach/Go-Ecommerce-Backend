@@ -27,21 +27,19 @@ func CatalogRoutes(restHand *rest.RestHandler) {
 	}
 	handler := catalogHandler{Controllers: services}
 
-	// app.Get("/products")
-	// app.Get("/products/:id")
-	// app.Get("/categories")
-	// app.Get("/categories/:id")
+	app.Get("/products", handler.GetProducts)
+	app.Get("/products/:id", handler.GetProductById)
+	app.Get("/categories", handler.FindCategories)
+	app.Get("/categories/:id", handler.FindCategoryById)
 
 	seller := app.Group("/seller")
 	privateRoutes := seller.Group("/", restHand.Auth.SellerAuthorize)
 
-	privateRoutes.Get("/categories", handler.FindCategories)
 	privateRoutes.Post("/categories", handler.CreateCategory)
 	privateRoutes.Patch("/categories/:id", handler.EditCategory)
 	privateRoutes.Delete("/categories/:id", handler.DeleteCategory)
-
 	privateRoutes.Post("/products", handler.CreateProduct)
-	privateRoutes.Get("/products", handler.GetProduct)
+	privateRoutes.Get("/products", handler.GetProducts)
 	privateRoutes.Get("/products/:id", handler.GetProductById)
 	privateRoutes.Put("/products/:id", handler.EditProduct)
 	privateRoutes.Patch("/products/:id", handler.UpdateStock)
@@ -52,9 +50,34 @@ func CatalogRoutes(restHand *rest.RestHandler) {
 func (r catalogHandler) FindCategories(ctx *fiber.Ctx) error {
 	data, err := r.Controllers.FindCategories()
 	if err != nil {
-		return rest.RespondWithError(ctx, http.StatusBadRequest, err)
+		return rest.RespondWithError(ctx, http.StatusNotFound, err)
 	}
 	return rest.RespondWithSucess(ctx, http.StatusOK, "categories", data)
+}
+
+func (r catalogHandler) FindCategoryById(ctx *fiber.Ctx) error {
+
+	idStr := ctx.Params("id")
+
+	if idStr == "" {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("missing category ID"))
+	}
+
+	id, err := uuid.Parse(idStr)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("invalid category ID"))
+
+	}
+
+	data, err := r.Controllers.FindCategoryById(id)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusNotFound, err)
+	}
+
+	return rest.RespondWithSucess(ctx, http.StatusOK, "category", data)
+
 }
 
 func (r catalogHandler) CreateCategory(ctx *fiber.Ctx) error {
@@ -158,7 +181,7 @@ func (r catalogHandler) UpdateStock(ctx *fiber.Ctx) error {
 	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
 }
 
-func (r catalogHandler) GetProduct(ctx *fiber.Ctx) error {
+func (r catalogHandler) GetProducts(ctx *fiber.Ctx) error {
 
 	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
 }
