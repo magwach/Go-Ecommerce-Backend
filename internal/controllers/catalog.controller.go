@@ -13,6 +13,7 @@ import (
 
 type CatalogContoller struct {
 	CatalogDB functions.CatalogDBFunction
+	ProductDB functions.ProductDBFunction
 	UserDB    functions.UserDBFunction
 	Auth      helper.Auth
 	Config    configs.AppConfig
@@ -96,6 +97,114 @@ func (r CatalogContoller) EditCategory(id uuid.UUID, input dto.AddCategory) (dto
 func (r CatalogContoller) DeleteCategory(id uuid.UUID) error {
 	if err := r.CatalogDB.DeleteCategory(id); err != nil {
 		return errors.New("failed to delete category")
+	}
+	return nil
+}
+
+func (r CatalogContoller) GetProducts() ([]dto.ProductResponse, error) {
+
+	products, err := r.ProductDB.GetProducts()
+
+	if err != nil {
+		return []dto.ProductResponse{}, errors.New("failed to find products")
+	}
+
+	mashalledProducts := []dto.ProductResponse{}
+
+	for _, product := range products {
+		mashalledProducts = append(mashalledProducts, dto.ToProductResponse(product))
+	}
+
+	return mashalledProducts, nil
+}
+
+func (r CatalogContoller) GetProductById(id uuid.UUID) (dto.ProductResponse, error) {
+
+	product, err := r.ProductDB.GetProductById(id)
+
+	if err != nil {
+		return dto.ProductResponse{}, errors.New("failed to find product")
+	}
+
+	return dto.ToProductResponse(product), nil
+}
+
+func (r CatalogContoller) CreateProduct(id uuid.UUID, input dto.CreateProduct) (dto.ProductResponse, error) {
+
+	seller, err := r.UserDB.FindUserById(id)
+
+	if err != nil {
+		return dto.ProductResponse{}, errors.New("cannot find user")
+	}
+
+	product := schema.Product{
+		Name:         *input.Name,
+		Description:  *input.Description,
+		CategoryID: *input.CategoryID,
+		ImageUrl:     *input.ImageUrl,
+		Price:        *input.Price,
+		Stock:        *input.Stock.Stock,
+		Owner:        seller.ID,
+	}
+
+	data, err := r.ProductDB.CreateProduct(product)
+
+	if err != nil {
+		return dto.ProductResponse{}, err
+	}
+
+	return dto.ToProductResponse(data), nil
+}
+
+func (r CatalogContoller) EditProduct(id uuid.UUID, input dto.CreateProduct) (dto.ProductResponse, error) {
+
+	product, err := r.ProductDB.GetProductById(id)
+
+	if err != nil {
+		return dto.ProductResponse{}, errors.New("failed to find product")
+	}
+
+	if input.Name != nil {
+		product.Name = *input.Name
+	}
+	if input.Description != nil {
+		product.Description = *input.Description
+	}
+	if input.CategoryID != nil {
+		product.CategoryID = *input.CategoryID
+	}
+	if input.ImageUrl != nil {
+		product.ImageUrl = *input.ImageUrl
+	}
+	if input.Price != nil {
+		product.Price = *input.Price
+	}
+	if input.Stock.Stock != nil {
+		product.Stock = *input.Stock.Stock
+	}
+
+	data, err := r.ProductDB.EditProduct(id, product)
+
+	if err != nil {
+		return dto.ProductResponse{}, errors.New("failed to edit product")
+	}
+
+	return dto.ToProductResponse(data), nil
+}
+
+func (r CatalogContoller) UpdateStock(id uuid.UUID, stock dto.StockStruct) (dto.ProductResponse, error) {
+
+	product, err := r.ProductDB.UpdateStock(id, *stock.Stock)
+
+	if err != nil {
+		return dto.ProductResponse{}, errors.New("failed to update stock")
+	}
+
+	return dto.ToProductResponse(product), nil
+}
+func (r CatalogContoller) DeleteProduct(id uuid.UUID) error {
+	if err := r.ProductDB.DeleteProduct(id); err != nil {
+		return errors.New("failed to delete product")
 	}
 	return nil
 }

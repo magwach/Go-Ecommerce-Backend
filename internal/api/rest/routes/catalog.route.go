@@ -21,6 +21,7 @@ func CatalogRoutes(restHand *rest.RestHandler) {
 
 	services := controllers.CatalogContoller{
 		CatalogDB: functions.InitializeCatalogDBFunction(restHand.DB),
+		ProductDB: functions.InitializeProductDBFunction(restHand.DB),
 		UserDB:    functions.InitializeUserDBFunction(restHand.DB),
 		Auth:      restHand.Auth,
 		Config:    restHand.Configuration,
@@ -44,7 +45,6 @@ func CatalogRoutes(restHand *rest.RestHandler) {
 	privateRoutes.Put("/products/:id", handler.EditProduct)
 	privateRoutes.Patch("/products/:id", handler.UpdateStock)
 	privateRoutes.Delete("/products/:id", handler.DeleteProduct)
-
 }
 
 func (r catalogHandler) FindCategories(ctx *fiber.Ctx) error {
@@ -158,35 +158,139 @@ func (r catalogHandler) DeleteCategory(ctx *fiber.Ctx) error {
 
 func (r catalogHandler) CreateProduct(ctx *fiber.Ctx) error {
 
-	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
+	user := r.Controllers.Auth.GetCurrentUser(ctx)
+	id := user.ID
+
+	request := dto.CreateProduct{}
+	err := ctx.BodyParser(&request)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, err)
+	}
+
+	data, err := r.Controllers.CreateProduct(id, request)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, err)
+	}
+
+	return rest.RespondWithSucess(ctx, http.StatusCreated, "product created", data)
 }
 
 func (r catalogHandler) EditProduct(ctx *fiber.Ctx) error {
 
-	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
-}
+	idStr := ctx.Params("id")
 
-func (r catalogHandler) UpdateProduct(ctx *fiber.Ctx) error {
+	if idStr == "" {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("missing category ID"))
+	}
 
-	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
+	id, err := uuid.Parse(idStr)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("invalid category ID"))
+
+	}
+
+	request := dto.CreateProduct{}
+	err = ctx.BodyParser(&request)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, err)
+	}
+
+	data, err := r.Controllers.EditProduct(id, request)
+
+	if err != nil {
+		return rest.RespondWithInternalError(ctx, err)
+	}
+
+	return rest.RespondWithSucess(ctx, http.StatusOK, "product edited", data)
 }
 
 func (r catalogHandler) DeleteProduct(ctx *fiber.Ctx) error {
 
-	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
-}
+	idStr := ctx.Params("id")
 
+	if idStr == "" {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("missing category ID"))
+	}
+
+	id, err := uuid.Parse(idStr)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("invalid category ID"))
+
+	}
+
+	err = r.Controllers.DeleteProduct(id)
+
+	if err != nil {
+		return rest.RespondWithInternalError(ctx, err)
+	}
+
+	return rest.RespondWithSucess(ctx, http.StatusOK, "product deleted", nil)
+}
 func (r catalogHandler) UpdateStock(ctx *fiber.Ctx) error {
 
-	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
+	idStr := ctx.Params("id")
+
+	if idStr == "" {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("missing category ID"))
+	}
+
+	id, err := uuid.Parse(idStr)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("invalid category ID"))
+
+	}
+
+	request := dto.StockStruct{}
+	err = ctx.BodyParser(&request)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, err)
+	}
+
+	data, err := r.Controllers.UpdateStock(id, request)
+
+	if err != nil {
+		return rest.RespondWithInternalError(ctx, err)
+	}
+
+	return rest.RespondWithSucess(ctx, http.StatusOK, "product edited", data)
 }
 
 func (r catalogHandler) GetProducts(ctx *fiber.Ctx) error {
+	data, err := r.Controllers.GetProducts()
 
-	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
+	if err != nil {
+		return rest.RespondWithInternalError(ctx, err)
+	}
+	return rest.RespondWithSucess(ctx, http.StatusCreated, "products fetched", data)
 }
 
 func (r catalogHandler) GetProductById(ctx *fiber.Ctx) error {
 
-	return rest.RespondWithSucess(ctx, http.StatusCreated, "category created", nil)
+	idStr := ctx.Params("id")
+
+	if idStr == "" {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("missing category ID"))
+	}
+
+	id, err := uuid.Parse(idStr)
+
+	if err != nil {
+		return rest.RespondWithError(ctx, http.StatusBadRequest, errors.New("invalid category ID"))
+
+	}
+
+	data, err := r.Controllers.GetProductById(id)
+
+	if err != nil {
+		return rest.RespondWithInternalError(ctx, err)
+	}
+
+	return rest.RespondWithSucess(ctx, http.StatusCreated, "product fetched", data)
 }

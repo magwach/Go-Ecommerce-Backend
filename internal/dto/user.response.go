@@ -52,3 +52,29 @@ func ToCategoryResponse(cat schema.Category) CategoryResponse {
 		UpdatedAt:    cat.UpdatedAt,
 	}
 }
+
+type ProductResponse struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CategoryID  uuid.UUID `json:"category_id"`
+	ImageUrl    string    `json:"image_url"`
+	Price       int       `json:"price"`
+	Stock       uint      `json:"stock"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+func ToProductResponse(prod schema.Product) ProductResponse {
+	return ProductResponse{
+		ID:          prod.ID,
+		Name:        prod.Name,
+		Description: prod.Description,
+		CategoryID:  prod.CategoryID,
+		ImageUrl:    prod.ImageUrl,
+		Price:       prod.Price,
+		Stock:       prod.Stock,
+		CreatedAt:   prod.CreatedAt,
+		UpdatedAt:   prod.UpdatedAt,
+	}
+}
