@@ -13,6 +13,7 @@ import (
 type ProductDBFunction interface {
 	GetProducts() ([]schema.Product, error)
 	GetProductById(id uuid.UUID) (schema.Product, error)
+	GetSellerProducts(id uuid.UUID) ([]schema.Product, error)
 	CreateProduct(product schema.Product) (schema.Product, error)
 	EditProduct(id uuid.UUID, updated schema.Product) (schema.Product, error)
 	UpdateStock(id uuid.UUID, stock uint) (schema.Product, error)
@@ -56,6 +57,14 @@ func (r productDBFunction) GetProductById(id uuid.UUID) (schema.Product, error) 
 	}
 
 	return product, nil
+}
+
+func (r productDBFunction) GetSellerProducts(id uuid.UUID) ([]schema.Product, error) {
+	var products []schema.Product
+	if err := r.db.Where("owner = ?", id).Find(&products).Error; err != nil {
+		return []schema.Product{}, err
+	}
+	return products, nil
 }
 
 func (r productDBFunction) CreateProduct(product schema.Product) (schema.Product, error) {

@@ -24,13 +24,13 @@ func UserRoutes(restHand *rest.RestHandler) {
 	}
 	handler := userHandler{Controllers: services}
 
-	user := app.Group("/user")
+	user := app.Group("/users")
 
 	publicRoutes := user.Group("")
 
 	privateRoutes := user.Group("/me", restHand.Auth.UserAuthorize)
 
-	publicRoutes.Post("/signup", handler.SignUp)
+	publicRoutes.Post("/register", handler.SignUp)
 	publicRoutes.Post("/login", handler.Login)
 
 	privateRoutes.Post("/verify", handler.VerifyCode)

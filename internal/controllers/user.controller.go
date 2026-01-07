@@ -135,6 +135,8 @@ func (s UserContoller) GetVerificationCode(u *schema.User) error {
 func (s UserContoller) VerifyCode(id uuid.UUID, input dto.UserVerifyCode) error {
 	user, err := s.DB.FindUserById(id)
 
+	log.Println("user vERIFIED", user.Verified)
+
 	if err != nil {
 		return errors.New("cannot find user")
 	}

@@ -40,7 +40,7 @@ func CatalogRoutes(restHand *rest.RestHandler) {
 	privateRoutes.Patch("/categories/:id", handler.EditCategory)
 	privateRoutes.Delete("/categories/:id", handler.DeleteCategory)
 	privateRoutes.Post("/products", handler.CreateProduct)
-	privateRoutes.Get("/products", handler.GetProducts)
+	privateRoutes.Get("/products", handler.GetSellerProducts)
 	privateRoutes.Get("/products/:id", handler.GetProductById)
 	privateRoutes.Put("/products/:id", handler.EditProduct)
 	privateRoutes.Patch("/products/:id", handler.UpdateStock)
@@ -192,6 +192,9 @@ func (r catalogHandler) EditProduct(ctx *fiber.Ctx) error {
 
 	}
 
+	seller := r.Controllers.Auth.GetCurrentUser(ctx)
+	sellerID := seller.ID
+
 	request := dto.CreateProduct{}
 	err = ctx.BodyParser(&request)
 
@@ -199,7 +202,7 @@ func (r catalogHandler) EditProduct(ctx *fiber.Ctx) error {
 		return rest.RespondWithError(ctx, http.StatusBadRequest, err)
 	}
 
-	data, err := r.Controllers.EditProduct(id, request)
+	data, err := r.Controllers.EditProduct(id, sellerID, request)
 
 	if err != nil {
 		return rest.RespondWithInternalError(ctx, err)
@@ -246,6 +249,9 @@ func (r catalogHandler) UpdateStock(ctx *fiber.Ctx) error {
 
 	}
 
+	seller := r.Controllers.Auth.GetCurrentUser(ctx)
+	sellerID := seller.ID
+
 	request := dto.StockStruct{}
 	err = ctx.BodyParser(&request)
 
@@ -253,7 +259,7 @@ func (r catalogHandler) UpdateStock(ctx *fiber.Ctx) error {
 		return rest.RespondWithError(ctx, http.StatusBadRequest, err)
 	}
 
-	data, err := r.Controllers.UpdateStock(id, request)
+	data, err := r.Controllers.UpdateStock(id, sellerID, request)
 
 	if err != nil {
 		return rest.RespondWithInternalError(ctx, err)
@@ -268,6 +274,20 @@ func (r catalogHandler) GetProducts(ctx *fiber.Ctx) error {
 	if err != nil {
 		return rest.RespondWithInternalError(ctx, err)
 	}
+	return rest.RespondWithSucess(ctx, http.StatusCreated, "products fetched", data)
+}
+
+func (r catalogHandler) GetSellerProducts(ctx *fiber.Ctx) error {
+
+	user := r.Controllers.Auth.GetCurrentUser(ctx)
+	id := user.ID
+
+	data, err := r.Controllers.GetSellerProducts(id)
+
+	if err != nil {
+		return rest.RespondWithInternalError(ctx, err)
+	}
+
 	return rest.RespondWithSucess(ctx, http.StatusCreated, "products fetched", data)
 }
 

@@ -118,6 +118,23 @@ func (r CatalogContoller) GetProducts() ([]dto.ProductResponse, error) {
 	return mashalledProducts, nil
 }
 
+func (r CatalogContoller) GetSellerProducts(id uuid.UUID) ([]dto.ProductResponse, error) {
+
+	products, err := r.ProductDB.GetSellerProducts(id)
+
+	if err != nil {
+		return []dto.ProductResponse{}, errors.New("failed to find products")
+	}
+
+	mashalledProducts := []dto.ProductResponse{}
+
+	for _, product := range products {
+		mashalledProducts = append(mashalledProducts, dto.ToProductResponse(product))
+	}
+
+	return mashalledProducts, nil
+}
+
 func (r CatalogContoller) GetProductById(id uuid.UUID) (dto.ProductResponse, error) {
 
 	product, err := r.ProductDB.GetProductById(id)
@@ -138,13 +155,13 @@ func (r CatalogContoller) CreateProduct(id uuid.UUID, input dto.CreateProduct) (
 	}
 
 	product := schema.Product{
-		Name:         *input.Name,
-		Description:  *input.Description,
-		CategoryID: *input.CategoryID,
-		ImageUrl:     *input.ImageUrl,
-		Price:        *input.Price,
-		Stock:        *input.Stock.Stock,
-		Owner:        seller.ID,
+		Name:        *input.Name,
+		Description: *input.Description,
+		CategoryID:  *input.CategoryID,
+		ImageUrl:    *input.ImageUrl,
+		Price:       *input.Price,
+		Stock:       *input.Stock.Stock,
+		Owner:       seller.ID,
 	}
 
 	data, err := r.ProductDB.CreateProduct(product)
@@ -156,9 +173,13 @@ func (r CatalogContoller) CreateProduct(id uuid.UUID, input dto.CreateProduct) (
 	return dto.ToProductResponse(data), nil
 }
 
-func (r CatalogContoller) EditProduct(id uuid.UUID, input dto.CreateProduct) (dto.ProductResponse, error) {
+func (r CatalogContoller) EditProduct(id uuid.UUID, sellerID uuid.UUID, input dto.CreateProduct) (dto.ProductResponse, error) {
 
 	product, err := r.ProductDB.GetProductById(id)
+
+	if product.Owner != sellerID {
+		return dto.ProductResponse{}, errors.New("cannot edit product")
+	}
 
 	if err != nil {
 		return dto.ProductResponse{}, errors.New("failed to find product")
@@ -192,9 +213,13 @@ func (r CatalogContoller) EditProduct(id uuid.UUID, input dto.CreateProduct) (dt
 	return dto.ToProductResponse(data), nil
 }
 
-func (r CatalogContoller) UpdateStock(id uuid.UUID, stock dto.StockStruct) (dto.ProductResponse, error) {
+func (r CatalogContoller) UpdateStock(id uuid.UUID, sellerID uuid.UUID, stock dto.StockStruct) (dto.ProductResponse, error) {
 
 	product, err := r.ProductDB.UpdateStock(id, *stock.Stock)
+
+	if product.Owner != sellerID {
+		return dto.ProductResponse{}, errors.New("you are not the owner of this product")
+	}
 
 	if err != nil {
 		return dto.ProductResponse{}, errors.New("failed to update stock")

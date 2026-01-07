@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -31,6 +32,14 @@ func StartServer(cfg configs.AppConfig) {
 	if err != nil {
 		log.Fatalf("database migrations error: %v", err)
 	}
+
+	c := cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3030",
+		AllowHeaders: "Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+	})
+
+	app.Use(c)
 
 	v1Routes := app.Group("/api/v1")
 
